@@ -22,7 +22,7 @@ extern Semaphore_Handle gSendSemaphore;
 
 //extern unsigned char g_inBuffer[0x001000000];			//url value.
 //extern unsigned char g_outBuffer[0x00600000]; //27M
-#pragma DATA_SECTION(g_outBuffer,".WtSpace");
+//#pragma DATA_SECTION(g_outBuffer,".WtSpace");
 unsigned char g_outBuffer[0x00e00000]; //4M-->max size=500M
 //unsigned char *g_outBuffer=NULL; //27M
 
@@ -149,7 +149,7 @@ int http_get()
 
 	//cyx modify
 	//uint32_t *pOutbuffer = (uint32_t *) (C6678_PCIEDATA_BASE + 4 * 4 * 1024);
-	uint32_t *pOutbuffer = (uint32_t *)g_outBuffer;
+	uint32_t *pOutbuffer = (uint32_t *) g_outBuffer;
 	uint32_t *pUrlAddr = NULL;
 	uint32_t *pPicDestAddr = pOutbuffer;
 
@@ -167,30 +167,30 @@ int http_get()
 	struct sockaddr_in socket_address;
 	write_uart("http_get\n\r");
 
-	p_gPictureInfor=(PicInfor *)malloc(sizeof(PicInfor));
-	if(p_gPictureInfor!=NULL)
+	p_gPictureInfor = (PicInfor *) malloc(sizeof(PicInfor));
+	if (p_gPictureInfor != NULL)
 	{
 		write_uart("alloc the gPictureInfor finished\r\n");
 	}
 	else
 	{
 		write_uart("alloc the gPictureInfor error\r\n");
-		return(0);
+		return (0);
 	}
-/*
-	g_outBuffer=(unsigned char *)malloc(0x00600000*sizeof(char));
-	if(g_outBuffer!=NULL)
-	{
-		write_uart("alloc the g_outBuffer finished\r\n");
-	}
-	else
-	{
-		write_uart("alloc the g_outBuffer error\r\n");
-		return(0);
-	}
-	pOutbuffer=pPicDestAddr=(uint32_t *)g_outBuffer;
-	//memset(&gPictureInfor, 0, sizeof(PicInfor));
-*/
+	/*
+	 g_outBuffer=(unsigned char *)malloc(0x00600000*sizeof(char));
+	 if(g_outBuffer!=NULL)
+	 {
+	 write_uart("alloc the g_outBuffer finished\r\n");
+	 }
+	 else
+	 {
+	 write_uart("alloc the g_outBuffer error\r\n");
+	 return(0);
+	 }
+	 pOutbuffer=pPicDestAddr=(uint32_t *)g_outBuffer;
+	 //memset(&gPictureInfor, 0, sizeof(PicInfor));
+	 */
 #if 1
 
 	//dsp init ready and can read urls.
@@ -633,13 +633,15 @@ int http_get()
 
 				p_gPictureInfor->picAddr[picNum] = (uint8_t *) pPicDestAddr;
 				p_gPictureInfor->picLength[picNum] = nContentLength;
-				memcpy(p_gPictureInfor->picUrls[picNum], inrequest, URL_ITEM_LEN);
+				memcpy(p_gPictureInfor->picUrls[picNum], inrequest,
+						URL_ITEM_LEN);
 				p_gPictureInfor->picNums++;
 
 				sprintf(debugBuf,
 						"download fileName:%s,fileLength=%d bytes,picNum=%dth,p_gPictureInfor->picNums=%d,pRegisterTable->DSP_urlNumsReg=%d\r\n",
 						url_infor.p_fileName, nContentLength, picNum,
-						p_gPictureInfor->picNums, pRegisterTable->DSP_urlNumsReg);
+						p_gPictureInfor->picNums,
+						pRegisterTable->DSP_urlNumsReg);
 				write_uart(debugBuf);
 				downLoadPicNum++;
 				picNum++;
@@ -648,7 +650,8 @@ int http_get()
 			{
 				p_gPictureInfor->picAddr[picNum] = NULL;
 				p_gPictureInfor->picLength[picNum] = 0;
-				memcpy(p_gPictureInfor->picUrls[picNum], inrequest, URL_ITEM_LEN);
+				memcpy(p_gPictureInfor->picUrls[picNum], inrequest,
+						URL_ITEM_LEN);
 				p_gPictureInfor->picNums++;
 
 				downloadFail++;
@@ -660,7 +663,8 @@ int http_get()
 			}
 
 			// update the src and dest,urlItemNum.
-			pPicDestAddr = (uint32_t *) ((uint8_t *) (pPicDestAddr)+ nContentLength + sizeof(int));
+			pPicDestAddr = (uint32_t *) ((uint8_t *) (pPicDestAddr)
+					+ nContentLength + sizeof(int));
 			//pPicDestAddr = (pPicDestAddr + (nContentLength + 3) / 4);
 			//pPicDestAddr = pPicDestAddr + nContentLength ;
 			pUrlAddr = (pUrlAddr + URL_ITEM_LEN / 4);

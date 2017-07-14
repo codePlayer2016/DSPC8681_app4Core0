@@ -202,8 +202,8 @@ static void isrHandler(void* handle)
 	registerTable *pRegisterTable = (registerTable *) C6678_PCIEDATA_BASE;
 	CpIntc_disableHostInt(0, 3);
 
-	sprintf(debugInfor,"pRegisterTable->dpmStartStatus is %x \r\n",
-									pRegisterTable->dpmStartStatus);
+	sprintf(debugInfor, "pRegisterTable->dpmStartStatus is %x \r\n",
+			pRegisterTable->dpmStartStatus);
 	write_uart(debugInfor);
 	if ((pRegisterTable->dpmStartStatus) & DSP_DPM_STARTSTATUS)
 
@@ -230,10 +230,8 @@ static void isrHandler(void* handle)
 		Semaphore_post(g_writeSemaphore);
 	}
 
-
-
 	//clear PCIE interrupt
-			DEVICE_REG32_W (PCIE_LEGACY_A_IRQ_STATUS,0x1);
+	DEVICE_REG32_W(PCIE_LEGACY_A_IRQ_STATUS, 0x1);
 	DEVICE_REG32_W(PCIE_IRQ_EOI, 0x0);
 	CpIntc_clearSysInt(0, PCIEXpress_Legacy_INTA);
 
@@ -244,31 +242,32 @@ static void isrHandler(void* handle)
 int main()
 {
 	char messageBuf[100];
-	sprintf(messageBuf, "CoreNum=%d\n\r",DNUM);
+	sprintf(messageBuf, "CoreNum=%d\n\r", DNUM);
 	write_uart(messageBuf);
 
 	write_uart("Debug: BIOS_start\n\r");
 
 	//uint32_t *L2RAM_MultiCoreBoot=(uint32_t*)CORE0_MAGIC_ADDR;
 	//*(L2RAM_MultiCoreBoot+DNUM)=0X1;
-	uint32_t L2RAM_MultiCoreBoot = (0x1087ffff-8*4);
+	uint32_t L2RAM_MultiCoreBoot = (0x1087ffff - 8 * 4);
 
-	*((uint32_t *)(L2RAM_MultiCoreBoot+DNUM*4)) = 0x00000001;
+	*((uint32_t *) (L2RAM_MultiCoreBoot + DNUM * 4)) = 0x00000001;
 
 	//*(volatile uint32_t *)(0x0087fffc)=0xBABEFACE;
-	sprintf(messageBuf, "L2RAM_MultiCoreBoot value is %x\r\n",*((uint32_t *)(L2RAM_MultiCoreBoot+DNUM*4)));
+	sprintf(messageBuf, "L2RAM_MultiCoreBoot value is %x\r\n",
+			*((uint32_t *) (L2RAM_MultiCoreBoot + DNUM * 4)));
 	write_uart(messageBuf);
 
-	while(1)
+	while (1)
 	{
 		;
 	}
 	/**(volatile uint32_t *)(0x0087fffc)=0xBABEFACE;
-	write_uart("hello world!!!\r\n");
-	while(1)
-	{
-		;
-	}*/
+	 write_uart("hello world!!!\r\n");
+	 while(1)
+	 {
+	 ;
+	 }*/
 	//BIOS_start();
 }
 
@@ -361,15 +360,13 @@ int StackTest()
 	 fxn -- function
 	 arg -- argument to function
 	 unmask -- bool to unmask interrupt
-	 */
-	CpIntc_dispatchPlug(PCIEXpress_Legacy_INTA, (CpIntc_FuncPtr) isrHandler, 15,
-			TRUE);
+	 */CpIntc_dispatchPlug(PCIEXpress_Legacy_INTA, (CpIntc_FuncPtr) isrHandler,
+			15, TRUE);
 
 	/*
 	 id -- Cp_Intc number
 	 hostInt -- host interrupt number
-	 */
-	CpIntc_enableHostInt(0, 3);
+	 */CpIntc_enableHostInt(0, 3);
 	//hostInt -- host interrupt number
 	EventID_intc = CpIntc_getEventId(3);
 	//HwiParam_intc
@@ -382,8 +379,7 @@ int StackTest()
 	 hwiFxn -- pointer to ISR function
 	 params -- per-instance config params, or NULL to select default values (target-domain only)
 	 eb -- active error-handling block, or NULL to select default policy (target-domain only)
-	 */
-	Hwi_create(4, &CpIntc_dispatch, &HwiParam_intc, NULL);
+	 */Hwi_create(4, &CpIntc_dispatch, &HwiParam_intc, NULL);
 
 	//
 	// THIS MUST BE THE ABSOLUTE FIRST THING DONE IN AN APPLICATION before
@@ -915,18 +911,19 @@ static void NetworkIPAddr(IPN IPAddr, uint IfIdx, uint fAdd)
 	}
 
 }
-
+#if 0
 //
 // Service Status Reports
 //
 // Here's a quick example of using service status updates
 //
 static char *TaskName[] =
-{ "Telnet", "HTTP", "NAT", "DHCPS", "DHCPC", "DNS" };
+{	"Telnet", "HTTP", "NAT", "DHCPS", "DHCPC", "DNS"};
 static char *ReportStr[] =
-{ "", "Running", "Updated", "Complete", "Fault" };
+{	"", "Running", "Updated", "Complete", "Fault"};
 static char *StatusStr[] =
-{ "Disabled", "Waiting", "IPTerm", "Failed", "Enabled" };
+{	"Disabled", "Waiting", "IPTerm", "Failed", "Enabled"};
+#endif
 static void ServiceReport(uint Item, uint Status, uint Report, HANDLE h)
 {
 	/*    write_uart( "Service Status: %-9s: %-9s: %-9s: %03d\n",
