@@ -241,34 +241,13 @@ static void isrHandler(void* handle)
 
 int main()
 {
-	char messageBuf[100];
-	sprintf(messageBuf, "CoreNum=%d\n\r", DNUM);
-	write_uart(messageBuf);
+	// wait and receive the picture form the readZone that be pushed by the linux driver.
+	// push picture to the ddr of the other coreN.
+	// wait and get the coreN processed picture from the special ddr.
+	// push the processed picture to the writeZone.
 
-	write_uart("Debug: BIOS_start\n\r");
-
-	//uint32_t *L2RAM_MultiCoreBoot=(uint32_t*)CORE0_MAGIC_ADDR;
-	//*(L2RAM_MultiCoreBoot+DNUM)=0X1;
-	uint32_t L2RAM_MultiCoreBoot = (0x1087ffff - 8 * 4);
-
-	*((uint32_t *) (L2RAM_MultiCoreBoot + DNUM * 4)) = 0x00000001;
-
-	//*(volatile uint32_t *)(0x0087fffc)=0xBABEFACE;
-	sprintf(messageBuf, "L2RAM_MultiCoreBoot value is %x\r\n",
-			*((uint32_t *) (L2RAM_MultiCoreBoot + DNUM * 4)));
-	write_uart(messageBuf);
-
-	while (1)
-	{
-		;
-	}
-	/**(volatile uint32_t *)(0x0087fffc)=0xBABEFACE;
-	 write_uart("hello world!!!\r\n");
-	 while(1)
-	 {
-	 ;
-	 }*/
 	//BIOS_start();
+	platform_write("core0 app \n\r");
 }
 
 int StackTest()
