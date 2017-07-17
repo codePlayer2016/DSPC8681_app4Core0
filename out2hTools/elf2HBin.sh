@@ -1,15 +1,15 @@
-export CGT_INSTALL_DIR=/opt/ti/ccsv5/tools/compiler/c6000_7.4.16
+export CGT_INSTALL_DIR=/opt/ti/ccsv5/tools/compiler/c6000_7.4.4
 export TARGET=6678
 export ENDIAN=little
 
 # project name.
-DSPPRJ=DSPC8681_framework
+DSPPRJ=DSPC8681_app4Core0
 
 # input file name.
 SRCOUTFILE=${DSPPRJ}.out
 
 # output file name.
-OUTPUTFILE=DPUCore_6678.h
+OUTPUTFILE=DPUCore0_6678.h
 
 # array name
 ARRAYNAME=_DPUCore
@@ -26,7 +26,7 @@ fi
 
 ./Bttbl2Hfile DPUcore_temp.btbl DPUcore_temp.h DPUcore_temp.bin
 
-./hfile2array DPUcore_temp.h DPUcore.h _DPUCore
+./hfile2array DPUcore_temp.h DPUcore.h _DPUCore0
 
 if [ ${ENDIAN} == little ]
 then
