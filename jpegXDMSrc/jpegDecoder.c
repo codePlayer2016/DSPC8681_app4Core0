@@ -23,7 +23,7 @@
 #include "jpegdec.h"
 #include "jpegDecoder.h"
 #include "LinkLayer.h"
-#include "dpmFunc.h"
+//#include "dpmFunc.h"
 
 /* CSL and DMAN3 header files                                                 */
 #include <ti/sysbios/family/c66/Cache.h>
@@ -164,7 +164,7 @@ void JpegProcess(int picNum)
 
 	inputSrc = p_gPictureInfor->picAddr[picNum];
 	jpegPicLength = p_gPictureInfor->picLength[picNum];
-	inputData=((uint8_t *)inputSrc+4);
+	inputData = ((uint8_t *) inputSrc + 4);
 	//inputData=((char*)inputSrc+4);
 	validBytes = jpegPicLength;
 
@@ -186,7 +186,7 @@ void JpegProcess(int picNum)
 
 	inputBufDesc.descs[0].buf = inputData;
 	outputBufDesc.descs[0].buf = outputData;
-	if(inputBufDesc.descs[0].buf==NULL)
+	if (inputBufDesc.descs[0].buf == NULL)
 	{
 		write_uart("input img is error\r\n");
 		//return;
@@ -426,18 +426,18 @@ void JpegProcess(int picNum)
 	inputData = NULL;
 
 }
-void DPMMain()
+void decodePicTask()
 {
 
 	unsigned int picNum = 0;
 	int retVal = 0;
 	int count = 0;
 
+	write_uart("decodePicTask\n\r");
 	/* Init jpeg Decode */
 	JpegInit();
 	/* Init DPM Algrithm */
-	dpmInit();
-
+	//dpmInit();
 	Semaphore_pend(httptodpmSemaphore, BIOS_WAIT_FOREVER);
 	sprintf(debugInfor,
 			"p_gPictureInfor->picNums is %d DSP_DPM_OVERSTATUS is %x pRegisterTable->dpmOverStatus is %x \r\n",
@@ -459,10 +459,10 @@ void DPMMain()
 
 			if ((outArgs->imgdecOutArgs.extendedError == JPEGDEC_SUCCESS))
 			{
-				dpmProcess(outputBufDesc.descs[0].buf,
-						status->imgdecStatus.outputWidth,
-						status->imgdecStatus.outputHeight, picNum, URLNUM,
-						p_gPictureInfor->picNums, pRegisterTable);
+//				dpmProcess(outputBufDesc.descs[0].buf,
+//						status->imgdecStatus.outputWidth,
+//						status->imgdecStatus.outputHeight, picNum, URLNUM,
+//						p_gPictureInfor->picNums, pRegisterTable);
 
 			}
 			picNum++;
