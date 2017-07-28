@@ -16,7 +16,7 @@ LINUX_PROJECT_NAME=Linux_8681Driver
 LINUX_PROJECT_DIR=/home/jack/gitDSPC8681
 
 # the output .h file name.
-TARGETFILE=DPUCore0_6678.h
+TARGETFILE=app4Core0_6678.h
 
 # the output .h file filePath.
 TARGETDIR=${LINUX_PROJECT_DIR}/${LINUX_PROJECT_NAME}/inc

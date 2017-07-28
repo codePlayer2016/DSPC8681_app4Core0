@@ -9,8 +9,6 @@
 #define ERROR_DOWNLOADING 3
 #define PAUSE 4
 
-
-
 #define URL_NULL_ERROR -1
 #define URL_PROTOCAL_ERROR -2
 #define URL_HOST_ERROR -3
@@ -22,7 +20,6 @@
 #define HTTP_RESPONSE_ERROR -5
 #define HTTP_CON_LEN_ERROR -6
 #define HTTP_PCON_STA_ERROR -7
-
 
 #define NET_CONNECT_ERROR -8
 #define NET_SEND_ERROR - 9
@@ -48,10 +45,23 @@
 #define PC_WT_READY		(0x000055aaU)
 #define PC_WT_OVER		(0x55aa0000U)
 #define PC_WT_BUSY		(0x55555555U)
-// DSP-side read buffer status.
-#define DSP_RD_INIT		(0x000055aaU)
-#define DSP_RD_READY 	(0x55aa0000U)
-#define DSP_RD_OVER 	(0x000055aaU)
+/********************PC write to DSP.*/
+// DSP-side read buffer status.(dsp set)
+#define DSP_RD_RESET	(0x000055aaU)
+#define DSP_RD_FINISH 	(0x550000aaU)
+// PC-side write buffer status.(dsp polling)
+#define PC_WT_FINISH 	(0xaa000055U)
+#define PC_WT_RESET 	(0x0000aa55U)
+/*************************************/
+/********************DSP write to PC.*/
+// PC-side read buffer status.(dsp polling)
+#define PC_RD_RESET		(0x000077bbU)
+#define PC_RD_FINISH	(0x770000bbU)
+// DSP-side write buffer status.(dsp set)
+#define DSP_WT_RESET	(0x0000bb77U)
+#define DSP_WT_FINISH	(0xbb000077U)
+/*************************************/
+
 #define DSP_RD_BUSY		(0x55555555U)
 
 // PC-side read(DSP-side write) buffer status.
@@ -65,9 +75,8 @@
 #define DSP_WT_OVER 	(0x550000aaU)
 #define DSP_WT_BUSY		(0x55555555U)
 
-
 //This struct is used to get the information of the url.
-typedef struct  http_downloadInfo
+typedef struct http_downloadInfo
 {
 	char *p_input_url;
 	char *p_host_ip;
@@ -79,12 +88,12 @@ typedef struct  http_downloadInfo
 } http_downloadInfo;
 
 /************************************
-*	p_input_ulr is the input url.
-*	p_picture_data is the picture data.
-*	n_picture_length is the picture length.
-*	flag_downloadPicSuccessful is the flag for the picture downloading successful or not.
-*	n_error_code is the error code ,if download the picture failed.
-*************************************/
+ *	p_input_ulr is the input url.
+ *	p_picture_data is the picture data.
+ *	n_picture_length is the picture length.
+ *	flag_downloadPicSuccessful is the flag for the picture downloading successful or not.
+ *	n_error_code is the error code ,if download the picture failed.
+ *************************************/
 typedef struct pic_status
 {
 	char *p_input_ulr;
@@ -92,7 +101,7 @@ typedef struct pic_status
 	int n_picture_length;
 	int flag_downloadPicSuccessful;
 	int n_error_code;
-} pic_status,*p_pic_status;
+} pic_status, *p_pic_status;
 typedef struct __tagPicInfor
 {
 	uint8_t *picAddr[100];
@@ -105,8 +114,7 @@ typedef struct __tagPicInfor
 //{
 //	unsigned char g_outBuffer[0x00400000];
 //} PicOutInfor;
-int http_parseURL(char *p_url,http_downloadInfo *p_info);
-int http_sendRequest(SOCKET *socket_sendHandle,char *p_urlInput,http_downloadInfo *p_info);
-
+//int http_parseURL(char *p_url,http_downloadInfo *p_info);
+//int http_sendRequest(SOCKET *socket_sendHandle,char *p_urlInput,http_downloadInfo *p_info);
 
 #endif

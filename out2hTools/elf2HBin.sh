@@ -9,10 +9,10 @@ DSPPRJ=DSPC8681_app4Core0
 SRCOUTFILE=${DSPPRJ}.out
 
 # output file name.
-OUTPUTFILE=DPUCore0_6678.h
+OUTPUTFILE=app4Core0_6678.h
 
 # array name
-ARRAYNAME=_DPUCore
+ARRAYNAME=_app4Core0
 
 echo CGT_INSTALL_DIR set as: ${CGT_INSTALL_DIR}
 echo TARGET set as: ${TARGET}
@@ -26,7 +26,7 @@ fi
 
 ./Bttbl2Hfile DPUcore_temp.btbl DPUcore_temp.h DPUcore_temp.bin
 
-./hfile2array DPUcore_temp.h DPUcore.h _DPUCore0
+./hfile2array DPUcore_temp.h DPUcore.h ${ARRAYNAME}
 
 if [ ${ENDIAN} == little ]
 then

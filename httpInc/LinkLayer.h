@@ -39,6 +39,8 @@ typedef struct _tagRegisterTable
 {
 	// control registers. (4k)
 	uint32_t DPUBootControl;
+	uint32_t reserved0;
+	uint32_t reserved1;
 	uint32_t readControl;
 	uint32_t writeControl;
 	uint32_t getPicNumers;
@@ -46,34 +48,48 @@ typedef struct _tagRegisterTable
 	uint32_t dpmOverControl;
 	uint32_t dpmStartControl;
 	uint32_t dpmAllOverControl;
-	uint32_t reserved0[0x1000 / 4 - 8];
+	uint32_t reserve2;
+	uint32_t reserved3[0x1000 / 4 - 11];
 
 	// status registers. (4k)
 	uint32_t DPUBootStatus;
 	uint32_t readStatus;
 	uint32_t writeStatus;
 	uint32_t DSP_urlNumsReg;
-	uint32_t DSP_modelType;//1:motor 2:car 3:person
+	uint32_t DSP_modelType; //1:motor 2:car 3:person
 	uint32_t dpmOverStatus;
 	uint32_t dpmStartStatus;
-	uint32_t reserved1[0x1000 / 4 - 6];
+	uint32_t reserve4;
+	uint32_t reserved5[0x1000 / 4 - 8];
 } registerTable; //DSP
 #if 0
 typedef struct _tagLinkLayerRegisterTable
 {
 	// status registers. (4k)
 	uint32_t DPUBootStatus;
+	uint32_t SetMultiCoreBootStatus;
+	uint32_t MultiCoreBootStatus;
 	uint32_t writeStatus;
 	uint32_t readStatus;
-	uint32_t registerPhyAddrInPc;
-	uint32_t reserved0[0x1000 / 4 - 4];
+	uint32_t getPicNumers;
+	uint32_t failPicNumers;
+	uint32_t dpmOverStatus;
+	uint32_t dpmStartStatus;
+	uint32_t dpmAllOverStatus;
+	uint32_t pushCodeStatus;
+	uint32_t reserved0[0x1000 / 4 - 11];
 
 	// control registers. (4k)
 	uint32_t DPUBootControl;
 	uint32_t writeControl;
 	uint32_t readControl;
-	uint32_t reserved1[0x1000 / 4 - 3];
-}LinkLayerRegisterTable; //PC
+	uint32_t PC_urlNumsReg;
+	uint32_t modelType;//1:motor 2:car 3:person
+	uint32_t dpmOverControl;
+	uint32_t dpmStartControl;
+	uint32_t pushCodeControl;
+	uint32_t reserved1[0x1000 / 4 - 8];
+}LinkLayerRegisterTable;
 #endif
 typedef struct _tagLinkLayerHandler
 {
@@ -88,9 +104,9 @@ typedef struct _tagLinkLayerHandler
 	uint32_t *pReadConfirmReg;
 } LinkLayerHandler, *LinkLayerHandlerPtr;
 /*
-void LinkLayer_Open(uint32_t *pRegMem);
-int LinkLayer_Read(uint8_t *pBuffer, int length);
-int LinkLayer_Write(uint8_t *pBuffer, int length);
-*/
+ void LinkLayer_Open(uint32_t *pRegMem);
+ int LinkLayer_Read(uint8_t *pBuffer, int length);
+ int LinkLayer_Write(uint8_t *pBuffer, int length);
+ */
 #endif /* LINKLAYER_H_ */
 
