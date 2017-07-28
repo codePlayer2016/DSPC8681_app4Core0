@@ -64,7 +64,7 @@ extern Semaphore_Handle gRecvSemaphore;
 extern Semaphore_Handle gSendSemaphore;
 extern Semaphore_Handle pcFinishReadSemaphore;
 //extern unsigned char *g_outBuffer; //4M
-
+extern void write_uart(char* msg);
 //extern PicInfor gPictureInfor;//
 extern PicInfor *p_gPictureInfor;
 uint8_t *inputSrc = NULL;

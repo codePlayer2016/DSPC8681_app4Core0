@@ -49,13 +49,12 @@ int pollValue(uint32_t * pAddress, uint32_t pollVal, uint32_t maxPollCount)
 	uint32_t realTimeVal = 0;
 	char debugInfor[100];
 
-	for (loopCount = 0; (loopCount < maxPollCount) && (stopPoll == 0);
+	for (loopCount = 0; ((loopCount < maxPollCount) && (stopPoll == 0));
 			loopCount++)
 	{
 		realTimeVal = DEVICE_REG32_R(pAddress);
 		//realTimeVal = *pAddress;
 		if (realTimeVal & pollVal)
-		//if (realTimeVal == pollVal)
 		{
 			stopPoll = 1;
 		}
@@ -122,7 +121,7 @@ int getPicTask()
 	int retVal = 0;
 
 	http_downloadInfo url_infor;
-	uint32_t urlItemNum = 3;
+	uint32_t urlItemNum = 0;
 	uint32_t downLoadPicNum = 0;
 	uint32_t downloadFail = 0;
 	char debugBuf[200];
@@ -144,14 +143,17 @@ int getPicTask()
 
 	int32_t picNum = 0;
 	char *ptrUrl = NULL;
+	char allUrlBuffer[10][URL_ITEM_LEN];
 	char urlBuffer[URL_ITEM_LEN];
 	uint32_t timeStart = 0;
 	uint32_t timeEnd = 0;
+	int strEndFlagPosition = 0;
+	int urlIndex = 0;
 
 	//cyx modify
 	//uint32_t *pOutbuffer = (uint32_t *) (C6678_PCIEDATA_BASE + 4 * 4 * 1024);
 	uint32_t *pOutbuffer = (uint32_t *) g_outBuffer;
-	uint32_t *pUrlAddr = NULL;
+	uint8_t *pUrlAddr = NULL;
 	uint32_t *pPicDestAddr = pOutbuffer;
 
 	registerTable *pRegisterTable = (registerTable *) C6678_PCIEDATA_BASE;
@@ -191,27 +193,48 @@ int getPicTask()
 		pRegisterTable->readControl = DSP_RD_RESET;
 		retVal = pollValue(&(pRegisterTable->readStatus), PC_WT_FINISH,
 				0x07ffffff);
+		if (-1 == retVal)
+		{
+			write_uart("wait pc write finished timeout\r\n");
+			return (retVal);
+		}
 		// read;
 		{
-			pUrlAddr = g_pReceiveBuffer;
+			write_uart("read begin\r\n");
+			pUrlAddr = (uint8_t *) g_pReceiveBuffer;
 			urlItemNum = DEVICE_REG32_R(&(pRegisterTable->DSP_urlNumsReg));
-			sprintf(debugBuf, "urlItemNum=%d\r\n",
+			sprintf(debugBuf, "urlItemNum=%d\n\r",
 					pRegisterTable->DSP_urlNumsReg);
 			write_uart(debugBuf);
-			while (urlItemNum > 0)
+
+			memcpy(allUrlBuffer[0], pUrlAddr, 10 * URL_ITEM_LEN);
+			while (urlIndex < urlItemNum)
 			{
-				memset(urlBuffer, 0, URL_ITEM_LEN);
-				memcpy(urlBuffer, pUrlAddr, URL_ITEM_LEN);
-				ptrUrl = urlBuffer;
-				pUrlAddr = (pUrlAddr + URL_ITEM_LEN / 4);
-				urlItemNum--;
+				strEndFlagPosition = strlen(allUrlBuffer[urlIndex]);
+				memcpy(debugBuf, allUrlBuffer[urlIndex], strEndFlagPosition);
+				write_uart(debugBuf);
+				write_uart("\n\r");
+				sprintf(debugBuf, "url:%s\n\r", allUrlBuffer[urlIndex]);
+				write_uart(debugBuf);
+				sprintf(debugBuf, "urlIndex=%d,strEndFlagPosition=%d\n\r",
+						urlIndex, strEndFlagPosition);
+				write_uart(debugBuf);
+				urlIndex++;
 			}
+			write_uart("read finish\n\r");
 
 		}
 		pRegisterTable->readControl = DSP_RD_FINISH;
-		retVal = pollValue(&(pRegisterTable->readStatus), PC_WT_FINISH,
+		write_uart("wait pc reset\n\r");
+		retVal = pollValue(&(pRegisterTable->readStatus), PC_WT_RESET,
 				0x07ffffff);
+		if (-1 == retVal)
+		{
+			write_uart("wait pc write reset timeout\n\r");
+			return (retVal);
+		}
 		pRegisterTable->readControl = DSP_RD_RESET;
+		write_uart("read finished\n\r");
 
 	}
 #if 0
@@ -243,7 +266,7 @@ int getPicTask()
 		if (retVal == 0)
 		{
 			urlItemNum = DEVICE_REG32_R(&(pRegisterTable->DSP_urlNumsReg));
-			sprintf(debugBuf, "urlItemNum=%d\r\n",
+			sprintf(debugBuf, "urlItemNum=%d\n\r",
 					pRegisterTable->DSP_urlNumsReg);
 			write_uart(debugBuf);
 			pUrlAddr = g_pReceiveBuffer;
@@ -257,14 +280,14 @@ int getPicTask()
 		{
 			retVal = -1;
 			sprintf(debugBuf,
-					"wait url time out. readStatus=0x%x,retVal=%d,urlItemNum=%d\r\n",
+					"wait url time out. readStatus=0x%x,retVal=%d,urlItemNum=%d\n\r",
 					pRegisterTable->readStatus, retVal, urlItemNum);
 			write_uart(debugBuf);
 			urlItemNum = 0;
 			//timeout
 			Semaphore_pend(g_readSemaphore, BIOS_WAIT_FOREVER);
 			urlItemNum = DEVICE_REG32_R(&(pRegisterTable->DSP_urlNumsReg));
-			sprintf(debugBuf, "urlItemNum=%d\r\n",
+			sprintf(debugBuf, "urlItemNum=%d\n\r",
 					pRegisterTable->DSP_urlNumsReg);
 			write_uart(debugBuf);
 			pUrlAddr = g_pReceiveBuffer;
@@ -311,7 +334,7 @@ int getPicTask()
 
 		// save the pic name.
 		strcpy(p_gPictureInfor->picName[picNum], url_infor.p_fileName);
-		sprintf(debugBuf, "the pic name is %s\r\n",
+		sprintf(debugBuf, "the pic name is %s\n\r",
 				p_gPictureInfor->picName[picNum]);
 		write_uart(debugBuf);
 
@@ -329,7 +352,7 @@ int getPicTask()
 		else
 		{
 			retVal = -3;
-			sprintf(debugBuf, "url parse error. retVal=%d\r\n", retVal);
+			sprintf(debugBuf, "url parse error. retVal=%d\n\r", retVal);
 			write_uart(debugBuf);
 		}
 		// create socket.
@@ -344,7 +367,7 @@ int getPicTask()
 			{
 				retVal = -4;
 				socketErrorCode = fdError();
-				sprintf(debugBuf, "socket error. errorCode=%d\r\n",
+				sprintf(debugBuf, "socket error. errorCode=%d\n\r",
 						socketErrorCode);
 				write_uart(debugBuf);
 			}
@@ -362,7 +385,7 @@ int getPicTask()
 				else
 				{
 					socketErrorCode = fdError();
-					sprintf(debugBuf, "setsockopt error. errorCode=%d\r\n",
+					sprintf(debugBuf, "setsockopt error. errorCode=%d\n\r",
 							socketErrorCode);
 					write_uart(debugBuf);
 					retVal = -5;
@@ -377,7 +400,7 @@ int getPicTask()
 					sizeof(socket_address));
 			if (retConnect != -1)
 			{
-				write_uart("connect successful\r\n");
+				write_uart("connect successful\n\r");
 			}
 			else
 			{

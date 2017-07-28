@@ -193,6 +193,8 @@ void write_uart(char* msg)
 	{
 		platform_uart_write(msg[i]);
 	}
+	//platform_uart_write('\r');
+	//platform_uart_write('\n');
 }
 #if 1
 /////////////////////////////////////////////////////////////////////////////////////////////
