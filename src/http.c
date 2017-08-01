@@ -73,6 +73,38 @@ int pollValue(uint32_t * pAddress, uint32_t pollVal, uint32_t maxPollCount)
 
 	return (retVal);
 }
+int pollEqualValue(uint32_t * pAddress, uint32_t pollVal, uint32_t maxPollCount)
+{
+	int retVal = 0;
+	uint32_t loopCount = 0;
+	uint32_t stopPoll = 0;
+	uint32_t realTimeVal = 0;
+	char debugInfor[100];
+
+	for (loopCount = 0; ((loopCount < maxPollCount) && (stopPoll == 0));
+			loopCount++)
+	{
+		realTimeVal = DEVICE_REG32_R(pAddress);
+		//realTimeVal = *pAddress;
+		if (realTimeVal==pollVal)
+		{
+			stopPoll = 1;
+		}
+		else
+		{
+		}
+	}
+	if (loopCount < maxPollCount)
+	{
+		retVal = 0;
+	}
+	else
+	{
+		retVal = -1;
+	}
+
+	return (retVal);
+}
 int pollZero(uint32_t * pAddress, uint32_t pollVal, uint32_t maxPollCount)
 {
 	int retVal = 0;
@@ -191,7 +223,7 @@ int getPicTask()
 	/********************************************DSP read and pc write*/
 	{
 		pRegisterTable->readControl = DSP_RD_RESET;
-		retVal = pollValue(&(pRegisterTable->readStatus), PC_WT_FINISH,
+		retVal = pollEqualValue(&(pRegisterTable->readStatus), PC_WT_FINISH,
 				0x07ffffff);
 		if (-1 == retVal)
 		{
@@ -207,6 +239,20 @@ int getPicTask()
 					pRegisterTable->DSP_urlNumsReg);
 			write_uart(debugBuf);
 
+			while (urlIndex < urlItemNum)
+			{
+				//read the length;
+				retVal = *(int *) pUrlAddr;
+				pUrlAddr += sizeof(int);
+				//todo read jpeg
+				{
+				};
+				pUrlAddr += retVal;
+				urlIndex++;
+				sprintf(debugBuf, "picLength=%d\n\r", retVal);
+				write_uart(debugBuf);
+			}
+#if 0
 			memcpy(allUrlBuffer[0], pUrlAddr, 10 * URL_ITEM_LEN);
 			while (urlIndex < urlItemNum)
 			{
@@ -221,12 +267,13 @@ int getPicTask()
 				write_uart(debugBuf);
 				urlIndex++;
 			}
+#endif
 			write_uart("read finish\n\r");
 
 		}
 		pRegisterTable->readControl = DSP_RD_FINISH;
 		write_uart("wait pc reset\n\r");
-		retVal = pollValue(&(pRegisterTable->readStatus), PC_WT_RESET,
+		retVal = pollEqualValue(&(pRegisterTable->readStatus), PC_WT_RESET,
 				0x07ffffff);
 		if (-1 == retVal)
 		{
