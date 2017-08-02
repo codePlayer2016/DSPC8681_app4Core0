@@ -247,7 +247,7 @@ int getPicTask()
 				//todo read jpeg
 				{
 				};
-				pUrlAddr += retVal;
+				pUrlAddr += ((retVal+3)/4)*4;
 				urlIndex++;
 				sprintf(debugBuf, "picLength=%d\n\r", retVal);
 				write_uart(debugBuf);
