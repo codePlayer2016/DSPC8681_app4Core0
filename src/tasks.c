@@ -8,8 +8,7 @@
 #include <ti/sysbios/knl/Semaphore.h>
 #include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/family/c66/tci66xx/CpIntc.h>
-#include "http.h"
-#include "LinkLayer.h"
+#include "app4Core0.h"
 
 #define URL_ITEM_LEN (100)
 
@@ -25,8 +24,6 @@ extern Semaphore_Handle gSendSemaphore;
 //#pragma DATA_SECTION(g_outBuffer,".WtSpace");
 unsigned char g_outBuffer[0x00e00000]; //4M-->max size=500M
 //unsigned char *g_outBuffer=NULL; //27M
-
-PicInfor *p_gPictureInfor;
 
 int g_DownloadFlags = 1;
 unsigned char pHttpHeadbuffer[1024] = "";
@@ -47,7 +44,7 @@ int pollValue(uint32_t * pAddress, uint32_t pollVal, uint32_t maxPollCount)
 	uint32_t loopCount = 0;
 	uint32_t stopPoll = 0;
 	uint32_t realTimeVal = 0;
-	char debugInfor[100];
+	//char debugInfor[100];
 
 	for (loopCount = 0; ((loopCount < maxPollCount) && (stopPoll == 0));
 			loopCount++)
@@ -79,14 +76,14 @@ int pollEqualValue(uint32_t * pAddress, uint32_t pollVal, uint32_t maxPollCount)
 	uint32_t loopCount = 0;
 	uint32_t stopPoll = 0;
 	uint32_t realTimeVal = 0;
-	char debugInfor[100];
+	//char debugInfor[100];
 
 	for (loopCount = 0; ((loopCount < maxPollCount) && (stopPoll == 0));
 			loopCount++)
 	{
 		realTimeVal = DEVICE_REG32_R(pAddress);
 		//realTimeVal = *pAddress;
-		if (realTimeVal==pollVal)
+		if (realTimeVal == pollVal)
 		{
 			stopPoll = 1;
 		}
@@ -152,56 +149,18 @@ int getPicTask()
 {
 	int retVal = 0;
 
-	http_downloadInfo url_infor;
-	uint32_t urlItemNum = 0;
-	uint32_t downLoadPicNum = 0;
-	uint32_t downloadFail = 0;
-	char debugBuf[200];
-	char headRequest[URL_ITEM_LEN];
-	char getRequest[URL_ITEM_LEN];
-	char inrequest[URL_ITEM_LEN];
-	//char *pHttpRequest = NULL;
-	unsigned char *pPicBuffer;
-	char *pContentLength = NULL;
-	int nContentLength = 0;
-	int retRecv = 0;
-	int i = 1;
-	int socketErrorCode = 0;
-	int retConnect = 0;
-	int sendBufferLength = 0;
-	int recvHttpHeadLength = 0;
-	int recvHttpGetLength = 0;
-	int socketOptFlag = 0;
+	uint32_t picCount = 0;
 
-	int32_t picNum = 0;
-	char *ptrUrl = NULL;
-	char allUrlBuffer[10][URL_ITEM_LEN];
-	char urlBuffer[URL_ITEM_LEN];
-	uint32_t timeStart = 0;
-	uint32_t timeEnd = 0;
-	int strEndFlagPosition = 0;
+	char debugBuf[200];
+
 	int urlIndex = 0;
 
-	//cyx modify
-	//uint32_t *pOutbuffer = (uint32_t *) (C6678_PCIEDATA_BASE + 4 * 4 * 1024);
-	uint32_t *pOutbuffer = (uint32_t *) g_outBuffer;
 	uint8_t *pUrlAddr = NULL;
-	uint32_t *pPicDestAddr = pOutbuffer;
 
 	registerTable *pRegisterTable = (registerTable *) C6678_PCIEDATA_BASE;
 
 	write_uart("getPicTask\n\r");
 
-	p_gPictureInfor = (PicInfor *) malloc(sizeof(PicInfor));
-	if (p_gPictureInfor != NULL)
-	{
-		write_uart("alloc the gPictureInfor finished\r\n");
-	}
-	else
-	{
-		write_uart("alloc the gPictureInfor error\r\n");
-		return (0);
-	}
 	/*
 	 g_outBuffer=(unsigned char *)malloc(0x00600000*sizeof(char));
 	 if(g_outBuffer!=NULL)
@@ -234,12 +193,12 @@ int getPicTask()
 		{
 			write_uart("read begin\r\n");
 			pUrlAddr = (uint8_t *) g_pReceiveBuffer;
-			urlItemNum = DEVICE_REG32_R(&(pRegisterTable->DSP_urlNumsReg));
+			picCount = DEVICE_REG32_R(&(pRegisterTable->DSP_urlNumsReg));
 			sprintf(debugBuf, "urlItemNum=%d\n\r",
 					pRegisterTable->DSP_urlNumsReg);
 			write_uart(debugBuf);
 
-			while (urlIndex < urlItemNum)
+			while (urlIndex < picCount)
 			{
 				//read the length;
 				retVal = *(int *) pUrlAddr;
@@ -247,14 +206,14 @@ int getPicTask()
 				//todo read jpeg
 				{
 				};
-				pUrlAddr += ((retVal+3)/4)*4;
+				pUrlAddr += ((retVal + 3) / 4) * 4;
 				urlIndex++;
 				sprintf(debugBuf, "picLength=%d\n\r", retVal);
 				write_uart(debugBuf);
 			}
 #if 0
 			memcpy(allUrlBuffer[0], pUrlAddr, 10 * URL_ITEM_LEN);
-			while (urlIndex < urlItemNum)
+			while (urlIndex < picCount)
 			{
 				strEndFlagPosition = strlen(allUrlBuffer[urlIndex]);
 				memcpy(debugBuf, allUrlBuffer[urlIndex], strEndFlagPosition);
@@ -312,7 +271,7 @@ int getPicTask()
 				0x07ffffff);
 		if (retVal == 0)
 		{
-			urlItemNum = DEVICE_REG32_R(&(pRegisterTable->DSP_urlNumsReg));
+			picCount = DEVICE_REG32_R(&(pRegisterTable->DSP_urlNumsReg));
 			sprintf(debugBuf, "urlItemNum=%d\n\r",
 					pRegisterTable->DSP_urlNumsReg);
 			write_uart(debugBuf);
@@ -328,12 +287,12 @@ int getPicTask()
 			retVal = -1;
 			sprintf(debugBuf,
 					"wait url time out. readStatus=0x%x,retVal=%d,urlItemNum=%d\n\r",
-					pRegisterTable->readStatus, retVal, urlItemNum);
+					pRegisterTable->readStatus, retVal, picCount);
 			write_uart(debugBuf);
-			urlItemNum = 0;
+			picCount = 0;
 			//timeout
 			Semaphore_pend(g_readSemaphore, BIOS_WAIT_FOREVER);
-			urlItemNum = DEVICE_REG32_R(&(pRegisterTable->DSP_urlNumsReg));
+			picCount = DEVICE_REG32_R(&(pRegisterTable->DSP_urlNumsReg));
 			sprintf(debugBuf, "urlItemNum=%d\n\r",
 					pRegisterTable->DSP_urlNumsReg);
 			write_uart(debugBuf);
@@ -356,14 +315,14 @@ int getPicTask()
 					"wait the pc be written.time over.writeStatus=0x%x\n\r",
 					pRegisterTable->writeStatus);
 			write_uart(debugBuf);
-			urlItemNum = 0;
+			picCount = 0;
 		}
 
 		write_uart("start download the pci loop\n");
 		p_gPictureInfor->picNums = 0;
 		picNum = 0;
 		// start the down load loop.
-		while (urlItemNum > 0)
+		while (picCount > 0)
 		{
 			// declare the socket.
 
@@ -777,7 +736,7 @@ int getPicTask()
 		//pPicDestAddr = pPicDestAddr + nContentLength ;
 		pUrlAddr = (pUrlAddr + URL_ITEM_LEN / 4);
 
-		urlItemNum--;
+		picCount--;
 
 		//close socket.
 		//fdClose(socket_handle);
@@ -840,7 +799,7 @@ int getPicTask()
 
 #endif
 #endif
-	free(p_gPictureInfor);
+	return (retVal);
 //free(g_outBuffer);
 //fdCloseSession(TaskSelf());
 // display the download status
@@ -867,6 +826,12 @@ int putPics()
 		//sendPicsToDsp();
 		//getPicBufferOfDSP();
 	}
+}
+
+int distributePicTask()
+{
+	int retVal = 0;
+	return (retVal);
 }
 
 /***************************************************************************

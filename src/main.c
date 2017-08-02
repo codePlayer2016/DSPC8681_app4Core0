@@ -57,10 +57,7 @@
 /* Resource manager for QMSS, PA, CPPI */
 #include "ti/platform/resource_mgr.h"
 
-#include "http.h"
-//#include "DPMMain.h"
-#include "LinkLayer.h"
-#include "jpegDecoder.h"
+#include "app4Core0.h"
 
 extern Semaphore_Handle gRecvSemaphore;
 extern Semaphore_Handle gSendSemaphore;
@@ -87,7 +84,6 @@ extern Semaphore_Handle pcFinishReadSemaphore;
  #define PCIE_LEGACY_A_IRQ_RAW          0x21800180
  #define PCIE_LEGACY_A_IRQ_SetEnable       0x21800188
  */
-#define PCIE_IRQ_EOI                   0x21800050
 #define PCIE_LEGACY_A_IRQ_STATUS       0x21800184
 
 #ifdef _EVMC6678L_
@@ -123,7 +119,6 @@ extern Semaphore_Handle pcFinishReadSemaphore;
 #define WFINISH (0x55aa55aa)
 #define WRFLAG (0xFFAAFFAA)
 
-#define MAGIC_ADDR          		(0x0087FFFC)
 #define GBOOT_MAGIC_ADDR(coreNum)			((1<<28) + ((coreNum)<<24) + (MAGIC_ADDR))
 #define CORE0_MAGIC_ADDR                   0x1087FFFC
 #define DEVICE_REG32_W(x,y)   *(volatile uint32_t *)(x)=(y)
@@ -149,7 +144,7 @@ platform_info gPlatformInfo;
 //static void NetworkIPAddr(IPN IPAddr, uint IfIdx, uint fAdd);
 
 extern int getPicTask();
-extern void decodePicTask();
+extern int distributePicTask();
 // Fun reporting function
 //static void ServiceReport(uint Item, uint Status, uint Report, HANDLE hCfgEntry);
 
@@ -201,9 +196,9 @@ void write_uart(char* msg)
 static void isrHandler(void* handle)
 {
 	char debugInfor[100];
-	registerTable *pRegisterTable = (registerTable *) C6678_PCIEDATA_BASE;
+	//registerTable *pRegisterTable = (registerTable *) C6678_PCIEDATA_BASE;
 	CpIntc_disableHostInt(0, 3);
-
+#if 0
 	sprintf(debugInfor, "pRegisterTable->dpmStartStatus is %x \r\n",
 			pRegisterTable->dpmStartStatus);
 	write_uart(debugInfor);
@@ -231,7 +226,7 @@ static void isrHandler(void* handle)
 	{
 		Semaphore_post(g_writeSemaphore);
 	}
-
+#endif
 	//clear PCIE interrupt
 	DEVICE_REG32_W(PCIE_LEGACY_A_IRQ_STATUS, 0x1);
 	DEVICE_REG32_W(PCIE_IRQ_EOI, 0x0);
@@ -294,7 +289,7 @@ int main()
 	//
 
 	//clear interrupt
-	pRegisterTable->dpmStartControl = DSP_DPM_STARTCLR;
+	//pRegisterTable->dpmStartControl = DSP_DPM_STARTCLR;
 	//TaskCreate(http_get, "http_get", OS_TASKPRINORM, 0x1400, 0, 0, 0);
 	//TaskCreate(DPMMain, "DPMMain", OS_TASKPRINORM, 0x2000, 0, 0, 0);
 	write_uart("app4Core0 start\n\r");
