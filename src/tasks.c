@@ -14,30 +14,42 @@
 
 extern Semaphore_Handle g_readSemaphore;
 extern Semaphore_Handle g_writeSemaphore;
-
 extern Semaphore_Handle httptodpmSemaphore;
-
 extern Semaphore_Handle gSendSemaphore;
 
-//extern unsigned char g_inBuffer[0x001000000];			//url value.
-//extern unsigned char g_outBuffer[0x00600000]; //27M
 //#pragma DATA_SECTION(g_outBuffer,".WtSpace");
 unsigned char g_outBuffer[0x00e00000]; //4M-->max size=500M
-//unsigned char *g_outBuffer=NULL; //27M
 
-int g_DownloadFlags = 1;
-unsigned char pHttpHeadbuffer[1024] = "";
-unsigned char pHttpGetbuffer[3 * 1024 * 1024];
+//------------------------------------------------------------------
+//2	M
+#define inBufSize (0x00200000)
+// 512K*4*7=0x00e00000
+#pragma DATA_SECTION(coreNInBuf,".coreNInBuf");
+unsigned char coreNInBuf[0x00e00000];
+unsigned char *pCore1InBuf=coreNInBuf;
+unsigned char *pCore2InBuf=coreNInBuf+inBufSize;
+unsigned char *pCore3InBuf=coreNInBuf+(inBufSize*2);
+unsigned char *pCore4InBuf=coreNInBuf+(inBufSize*3);
+unsigned char *pCore5InBuf=coreNInBuf+(inBufSize*4);
+unsigned char *pCore6InBuf=coreNInBuf+(inBufSize*5);
+unsigned char *pCore7InBuf=coreNInBuf+(inBufSize*6);
+
+
+#define OutBufSize (0x01C00000)
+// 7M*4*7=196M
+#pragma DATA_SECTION(coreNOutBuf,".coreNOutBuf");
+unsigned char coreNOutBuf[0x0c400000];
+unsigned char *pCore1OutBuf=coreNOutBuf;
+unsigned char *pCore2OutBuf=coreNOutBuf+OutBufSize;
+unsigned char *pCore3OutBuf=coreNOutBuf+(OutBufSize*2);
+unsigned char *pCore4OutBuf=coreNOutBuf+(OutBufSize*3);
+unsigned char *pCore5OutBuf=coreNOutBuf+(OutBufSize*4);
+unsigned char *pCore6OutBuf=coreNOutBuf+(OutBufSize*5);
+unsigned char *pCore7OutBuf=coreNOutBuf+(OutBufSize*6);
+
 
 uint32_t *g_pReceiveBuffer = (uint32_t *) (C6678_PCIEDATA_BASE + 2 * 4 * 1024);
 extern void write_uart(char* msg);
-#if 0
-int httpSendRequest(SOCKET socket, void *buffer, int *length, int flag);
-int httpRecvHead(SOCKET socket, void *buffer, int *length);
-int httpRecvGet(SOCKET socket, void *buffer, int *length, int flag);
-int httpRecvHeadTemp(SOCKET socket, void *buffer, int *length);
-int httpRecvGetTemp(SOCKET socket, void *buffer, int *length, int flag);
-#endif
 int pollValue(uint32_t * pAddress, uint32_t pollVal, uint32_t maxPollCount)
 {
 	int retVal = 0;
@@ -138,12 +150,10 @@ int pollZero(uint32_t * pAddress, uint32_t pollVal, uint32_t maxPollCount)
 
 	return (retVal);
 }
-//void set_http_package(http_downloadInfo *p_info, char *http_request)
-//{
-//	sprintf(http_request, "GET %s HTTP/1.1\r\nHOST:%s\r\nAccept:*/*\r\n\r\n",
-//			p_info->p_input_url, p_info->p_host_ip);
-//	//write_uart(http_request);
-//}
+
+
+
+
 
 int getPicTask()
 {
@@ -198,6 +208,7 @@ int getPicTask()
 					pRegisterTable->DSP_urlNumsReg);
 			write_uart(debugBuf);
 
+			//memcpy(core1InBuf,pUrlAddr,0x100000);
 			while (urlIndex < picCount)
 			{
 				//read the length;
@@ -211,22 +222,6 @@ int getPicTask()
 				sprintf(debugBuf, "picLength=%d\n\r", retVal);
 				write_uart(debugBuf);
 			}
-#if 0
-			memcpy(allUrlBuffer[0], pUrlAddr, 10 * URL_ITEM_LEN);
-			while (urlIndex < picCount)
-			{
-				strEndFlagPosition = strlen(allUrlBuffer[urlIndex]);
-				memcpy(debugBuf, allUrlBuffer[urlIndex], strEndFlagPosition);
-				write_uart(debugBuf);
-				write_uart("\n\r");
-				sprintf(debugBuf, "url:%s\n\r", allUrlBuffer[urlIndex]);
-				write_uart(debugBuf);
-				sprintf(debugBuf, "urlIndex=%d,strEndFlagPosition=%d\n\r",
-						urlIndex, strEndFlagPosition);
-				write_uart(debugBuf);
-				urlIndex++;
-			}
-#endif
 			write_uart("read finish\n\r");
 
 		}
@@ -240,8 +235,15 @@ int getPicTask()
 			return (retVal);
 		}
 		pRegisterTable->readControl = DSP_RD_RESET;
-		write_uart("read finished\n\r");
+		write_uart("getPicTask post g_writeSemaphore\n\r");
 
+		// distributePicToCoreN();
+		memcpy(pCore1InBuf,g_pReceiveBuffer,(inBufSize/2));
+		// todo wait core1 writeOver. in the isrHandle while judge
+		//interrupt2CoreN();
+		write_uart("triggle INT to core1\n\r");
+		DEVICE_REG32_W(IPC_INT_ADDR(1), 1);
+		//Semaphore_pend()
 	}
 #if 0
 	/********************************************DSP write and pc read*/
@@ -831,6 +833,8 @@ int putPics()
 int distributePicTask()
 {
 	int retVal = 0;
+	write_uart("distributePicTask wait g_writeSemaphore\n\r");
+	Semaphore_pend(g_writeSemaphore, BIOS_WAIT_FOREVER);
 	return (retVal);
 }
 
