@@ -11,6 +11,13 @@
 #define PCIE_LEGACY_B_IRQ_ENABLE_SET  0x21800198
 #define PCIE_IRQ_EOI                  50
 
+#define IPC_INT_ADDR(coreNum)				(0x02620240 + ((coreNum)*4))
+#define IPC_AR_ADDR(coreNum)				(0x02620280+((coreNum)*4))
+
+#define CHIP_LEVEL_REG (0x02620000)
+#define KICK0 (CHIP_LEVEL_REG+0x0038)
+#define KICK1 (CHIP_LEVEL_REG+0x003C)
+
 #define DEVICE_REG32_W(x,y)   *(volatile uint32_t *)(x)=(y)
 #define DEVICE_REG32_R(x)    (*(volatile uint32_t *)(x))
 #define C6678_PCIEDATA_BASE (0x60000000U)

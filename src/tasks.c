@@ -16,6 +16,7 @@ extern Semaphore_Handle g_readSemaphore;
 extern Semaphore_Handle g_writeSemaphore;
 extern Semaphore_Handle httptodpmSemaphore;
 extern Semaphore_Handle gSendSemaphore;
+extern void triggleIPCinterrupt(int destCoreNum, unsigned int srcFlag);
 
 //#pragma DATA_SECTION(g_outBuffer,".WtSpace");
 unsigned char g_outBuffer[0x00e00000]; //4M-->max size=500M
@@ -26,27 +27,25 @@ unsigned char g_outBuffer[0x00e00000]; //4M-->max size=500M
 // 512K*4*7=0x00e00000
 #pragma DATA_SECTION(coreNInBuf,".coreNInBuf");
 unsigned char coreNInBuf[0x00e00000];
-unsigned char *pCore1InBuf=coreNInBuf;
-unsigned char *pCore2InBuf=coreNInBuf+inBufSize;
-unsigned char *pCore3InBuf=coreNInBuf+(inBufSize*2);
-unsigned char *pCore4InBuf=coreNInBuf+(inBufSize*3);
-unsigned char *pCore5InBuf=coreNInBuf+(inBufSize*4);
-unsigned char *pCore6InBuf=coreNInBuf+(inBufSize*5);
-unsigned char *pCore7InBuf=coreNInBuf+(inBufSize*6);
-
+unsigned char *pCore1InBuf = coreNInBuf;
+unsigned char *pCore2InBuf = coreNInBuf + inBufSize;
+unsigned char *pCore3InBuf = coreNInBuf + (inBufSize * 2);
+unsigned char *pCore4InBuf = coreNInBuf + (inBufSize * 3);
+unsigned char *pCore5InBuf = coreNInBuf + (inBufSize * 4);
+unsigned char *pCore6InBuf = coreNInBuf + (inBufSize * 5);
+unsigned char *pCore7InBuf = coreNInBuf + (inBufSize * 6);
 
 #define OutBufSize (0x01C00000)
 // 7M*4*7=196M
 #pragma DATA_SECTION(coreNOutBuf,".coreNOutBuf");
 unsigned char coreNOutBuf[0x0c400000];
-unsigned char *pCore1OutBuf=coreNOutBuf;
-unsigned char *pCore2OutBuf=coreNOutBuf+OutBufSize;
-unsigned char *pCore3OutBuf=coreNOutBuf+(OutBufSize*2);
-unsigned char *pCore4OutBuf=coreNOutBuf+(OutBufSize*3);
-unsigned char *pCore5OutBuf=coreNOutBuf+(OutBufSize*4);
-unsigned char *pCore6OutBuf=coreNOutBuf+(OutBufSize*5);
-unsigned char *pCore7OutBuf=coreNOutBuf+(OutBufSize*6);
-
+unsigned char *pCore1OutBuf = coreNOutBuf;
+unsigned char *pCore2OutBuf = coreNOutBuf + OutBufSize;
+unsigned char *pCore3OutBuf = coreNOutBuf + (OutBufSize * 2);
+unsigned char *pCore4OutBuf = coreNOutBuf + (OutBufSize * 3);
+unsigned char *pCore5OutBuf = coreNOutBuf + (OutBufSize * 4);
+unsigned char *pCore6OutBuf = coreNOutBuf + (OutBufSize * 5);
+unsigned char *pCore7OutBuf = coreNOutBuf + (OutBufSize * 6);
 
 uint32_t *g_pReceiveBuffer = (uint32_t *) (C6678_PCIEDATA_BASE + 2 * 4 * 1024);
 extern void write_uart(char* msg);
@@ -151,10 +150,6 @@ int pollZero(uint32_t * pAddress, uint32_t pollVal, uint32_t maxPollCount)
 	return (retVal);
 }
 
-
-
-
-
 int getPicTask()
 {
 	int retVal = 0;
@@ -235,15 +230,19 @@ int getPicTask()
 			return (retVal);
 		}
 		pRegisterTable->readControl = DSP_RD_RESET;
-		write_uart("getPicTask post g_writeSemaphore\n\r");
 
 		// distributePicToCoreN();
-		memcpy(pCore1InBuf,g_pReceiveBuffer,(inBufSize/2));
+		memcpy(pCore1InBuf, g_pReceiveBuffer, (inBufSize / 2));
 		// todo wait core1 writeOver. in the isrHandle while judge
 		//interrupt2CoreN();
 		write_uart("triggle INT to core1\n\r");
-		DEVICE_REG32_W(IPC_INT_ADDR(1), 1);
-		//Semaphore_pend()
+		DEVICE_REG32_W((IPC_INT_ADDR(1)), 0x00000001);
+		//DEVICE_REG32_W(IPC_INT_ADDR(1), 1);
+		unsigned int flag = 4;
+		triggleIPCinterrupt(1, flag);
+
+		Semaphore_pend(g_readSemaphore,BIOS_WAIT_FOREVER);
+		write_uart("core1 wait finished\n\r");
 	}
 #if 0
 	/********************************************DSP write and pc read*/
@@ -833,7 +832,7 @@ int putPics()
 int distributePicTask()
 {
 	int retVal = 0;
-	write_uart("distributePicTask wait g_writeSemaphore\n\r");
+	//write_uart("distributePicTask wait g_writeSemaphore\n\r");
 	Semaphore_pend(g_writeSemaphore, BIOS_WAIT_FOREVER);
 	return (retVal);
 }

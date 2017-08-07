@@ -68,25 +68,11 @@ extern Semaphore_Handle g_readSemaphore;
 extern Semaphore_Handle g_writeSemaphore;
 extern Semaphore_Handle pcFinishReadSemaphore;
 
-#define DEVICE_REG32_W(x,y)   *(volatile uint32_t *)(x)=(y)
-#define DEVICE_REG32_R(x)    (*(volatile uint32_t *)(x))
 #define IPC_INT_ADDR(coreNum)				(0x02620240 + ((coreNum)*4))
 #define IPC_AR_ADDR(coreNum)				(0x02620280+((coreNum)*4))
-
-#define DDR_TEST_START                 0x80000000
-#define DDR_TEST_END                   0x80400000
-#define BOOT_UART_BAUDRATE                 115200
-
 #define PCIEXpress_Legacy_INTA                 50
 #define PCIEXpress_Legacy_INTB                 50
-/*
- #define PCIE_IRQ_EOI                   0x21800050
- #define PCIE_EP_IRQ_SET		           0x21800064
- #define PCIE_LEGACY_A_IRQ_STATUS       0x21800184
- #define PCIE_LEGACY_A_IRQ_RAW          0x21800180
- #define PCIE_LEGACY_A_IRQ_SetEnable       0x21800188
- */
-#define PCIE_LEGACY_A_IRQ_STATUS       0x21800184
+#define BOOT_UART_BAUDRATE                 115200
 
 #ifdef _EVMC6678L_
 #define MAGIC_ADDR     (0x87fffc)
@@ -94,55 +80,18 @@ extern Semaphore_Handle pcFinishReadSemaphore;
 #endif
 
 #define PAGE_SIZE (0x1000)
-//the ddr read address space zone in DSP mapped to the PC.
-#define DDR_WRITE_MMAP_START (0x80B00000)
-#define DDR_WRITE_MMAP_LENGTH (0x00400000)
-#define DDR_WRITE_MMAP_USED_LENGTH (0x00400000)
-//the ddr read address space zone in DSP mapped to the PC.
-#define DDR_READ_MMAP_START (0x80F00000)
-#define DDR_READ_MMAP_LENGTH (0x00100000)
-#define DDR_READ_MMAP_USED_LENGTH (0x00100000)
-//expand a 4K space at the end of DDR_READ_MMAP zone as read and write flag
-#define DDR_REG_PAGE_START (DDR_READ_MMAP_START + DDR_READ_MMAP_LENGTH - PAGE_SIZE)
-#define DDR_REG_PAGE_USED_LENGTH (PAGE_SIZE)
-
-#define OUT_REG (0x60000000)
-#define IN_REG (0x60000004)
-#define WR_REG (0x60000008)
-
-#define WAITTIME (0x0FFFFFFF)
-
-#define RINIT (0xaa55aa55)
-#define READABLE (0x0)
-#define RFINISH (0xaa55aa55)
-
-#define WINIT (0x0)
-#define WRITEABLE (0x0)
-#define WFINISH (0x55aa55aa)
-#define WRFLAG (0xFFAAFFAA)
-
 #define GBOOT_MAGIC_ADDR(coreNum)			((1<<28) + ((coreNum)<<24) + (MAGIC_ADDR))
 #define CORE0_MAGIC_ADDR                   0x1087FFFC
-#define DEVICE_REG32_W(x,y)   *(volatile uint32_t *)(x)=(y)
 
-
-
-
-
-
-//#pragma DATA_SECTION(g_outBuffer,".WtSpace");
-//unsigned char g_outBuffer[0x00600000]; //4M
-//#pragma DATA_SECTION(g_inBuffer,".RdSpace");
-unsigned char g_inBuffer[0x00100000]; //url value.
-//add the SEM mode .    add by LHS
+static void registeIPCint();
+static void ipcIrqHandler(UArg params);
+void triggleIPCinterrupt(int destCoreNum, unsigned int srcFlag);
 
 /* Platform Information - we will read it form the Platform Library */
 platform_info gPlatformInfo;
 
 extern int getPicTask();
 extern int distributePicTask();
-
-
 
 void write_uart(char* msg)
 {
@@ -208,6 +157,8 @@ int main()
 	// push picture to the ddr of the other coreN.
 	// wait and get the coreN processed picture from the special ddr.
 	// push the processed picture to the writeZone.
+	DEVICE_REG32_W(KICK0, 0x83e70b13);
+	DEVICE_REG32_W(KICK1, 0x95a4f1e0);
 	int EventID_intc;
 	Hwi_Params HwiParam_intc;
 	registerTable *pRegisterTable = (registerTable *) C6678_PCIEDATA_BASE;
@@ -258,38 +209,47 @@ int main()
 	//pRegisterTable->dpmStartControl = DSP_DPM_STARTCLR;
 	//TaskCreate(http_get, "http_get", OS_TASKPRINORM, 0x1400, 0, 0, 0);
 	//TaskCreate(DPMMain, "DPMMain", OS_TASKPRINORM, 0x2000, 0, 0, 0);
+	registeIPCint();
 	write_uart("app4Core0 start\n\r");
 	BIOS_start();
 }
 
-
-static void interruptRegister()
+static void registeIPCint()
 {
 	// IPC interrupt set.
-		int ipcEventId=91;
-		Hwi_Params hwiParams;
-		Hwi_Params_init(&hwiParams);
-		hwiParams.arg=ipcEventId;
-		hwiParams.eventId=ipcEventId;
-		hwiParams.enableInt=TRUE;
-		Hwi_create(5,ipcIrqHandler,&hwiParams,NULL);
-		Hwi_enable();
+	int ipcEventId = 91;
+	Hwi_Params hwiParams;
+	Hwi_Params_init(&hwiParams);
+	hwiParams.arg = 32;
+	hwiParams.eventId = ipcEventId;
+	hwiParams.enableInt = TRUE;
+	Hwi_create(5, ipcIrqHandler, &hwiParams, NULL);
+	Hwi_enable();
 }
-// get interrupt from Core0 can be read the picture from Core0.
+// get interrupt from Core0 can be read the picture from CoreN.
 static void ipcIrqHandler(UArg params)
 {
+	unsigned int ipcACKregVal = 0;
+	unsigned int ipcACKval = 0;
 	//read the IPC_AR_ADDR(0)
+	ipcACKregVal = DEVICE_REG32_R(IPC_AR_ADDR(0));
 	//identify the interrupt source by the SRCCn bit of the IPC_AR_ADDR(0)
+	ipcACKval = (ipcACKregVal >> 4);
 	//process
+	//if (0 != ipcACKval)
+	{
+		Semaphore_post(g_readSemaphore);
+	}
 	//restore the IPC_CG_ADDR(0) by write the IPC_AR_ADDR(0) that read Value.
+	//DEVICE_REG32_W(IPC_AR_ADDR(0), ipcACKregVal);
 }
 //Cache_wbInv();// use after write.
 //Cache_wb();
 //Cache_inv();  // use before read.
 //Cache_wait()
-static void triggleIPCinterrupt(int destCoreNum,int srcFlag)
+void triggleIPCinterrupt(int destCoreNum, unsigned int srcFlag)
 {
-	int writeValue=srcFlag|0x01;
-	DEVICE_REG32_W(IPC_INT_ADDR(destCoreNum),writeValue);
+	unsigned int writeValue = ((srcFlag<<1)|0x01);
+	DEVICE_REG32_W((IPC_INT_ADDR(destCoreNum)), writeValue);
 }
 
