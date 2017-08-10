@@ -93,6 +93,8 @@ platform_info gPlatformInfo;
 extern int getPicTask();
 extern int distributePicTask();
 
+//#define DEBUG_PROCESS
+#ifdef DEBUG_PROCESS
 void write_uart(char* msg)
 {
 	uint32_t i;
@@ -103,9 +105,13 @@ void write_uart(char* msg)
 	{
 		platform_uart_write(msg[i]);
 	}
-	//platform_uart_write('\r');
-	//platform_uart_write('\n');
 }
+#else
+void write_uart(char *msg)
+{
+}
+#endif
+
 #if 1
 /////////////////////////////////////////////////////////////////////////////////////////////
 static void isrHandler(void* handle)
@@ -179,7 +185,8 @@ int main()
 	 fxn -- function
 	 arg -- argument to function
 	 unmask -- bool to unmask interrupt
-	 */CpIntc_dispatchPlug(PCIEXpress_Legacy_INTA, (CpIntc_FuncPtr) isrHandler,
+	 */
+	CpIntc_dispatchPlug(PCIEXpress_Legacy_INTA, (CpIntc_FuncPtr) isrHandler,
 			15, TRUE);
 
 	/*
@@ -210,7 +217,7 @@ int main()
 	//TaskCreate(http_get, "http_get", OS_TASKPRINORM, 0x1400, 0, 0, 0);
 	//TaskCreate(DPMMain, "DPMMain", OS_TASKPRINORM, 0x2000, 0, 0, 0);
 	registeIPCint();
-	write_uart("app4Core0 start\n\r");
+//	write_uart("app4Core0 start\n\r");
 	BIOS_start();
 }
 
@@ -249,6 +256,8 @@ static void ipcIrqHandler(UArg params)
 //Cache_wait()
 void triggleIPCinterrupt(int destCoreNum, unsigned int srcFlag)
 {
+	DEVICE_REG32_W(KICK0, 0x83e70b13);
+	DEVICE_REG32_W(KICK1, 0x95a4f1e0);
 	unsigned int writeValue = ((srcFlag<<1)|0x01);
 	DEVICE_REG32_W((IPC_INT_ADDR(destCoreNum)), writeValue);
 }

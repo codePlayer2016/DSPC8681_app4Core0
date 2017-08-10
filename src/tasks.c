@@ -164,7 +164,7 @@ int getPicTask()
 
 	registerTable *pRegisterTable = (registerTable *) C6678_PCIEDATA_BASE;
 
-	write_uart("getPicTask\n\r");
+	//write_uart("getPicTask\n\r");
 
 	/*
 	 g_outBuffer=(unsigned char *)malloc(0x00600000*sizeof(char));
@@ -196,12 +196,12 @@ int getPicTask()
 		}
 		// read;
 		{
-			write_uart("read begin\r\n");
+			//write_uart("read begin\r\n");
 			pUrlAddr = (uint8_t *) g_pReceiveBuffer;
 			picCount = DEVICE_REG32_R(&(pRegisterTable->DSP_urlNumsReg));
-			sprintf(debugBuf, "urlItemNum=%d\n\r",
-					pRegisterTable->DSP_urlNumsReg);
-			write_uart(debugBuf);
+			//sprintf(debugBuf, "urlItemNum=%d\n\r",
+			//		pRegisterTable->DSP_urlNumsReg);
+			//write_uart(debugBuf);
 
 			//memcpy(core1InBuf,pUrlAddr,0x100000);
 			while (urlIndex < picCount)
@@ -217,11 +217,11 @@ int getPicTask()
 				sprintf(debugBuf, "picLength=%d\n\r", retVal);
 				write_uart(debugBuf);
 			}
-			write_uart("read finish\n\r");
+			//write_uart("read finish\n\r");
 
 		}
 		pRegisterTable->readControl = DSP_RD_FINISH;
-		write_uart("wait pc reset\n\r");
+		//write_uart("wait pc reset\n\r");
 		retVal = pollEqualValue(&(pRegisterTable->readStatus), PC_WT_RESET,
 				0x07ffffff);
 		if (-1 == retVal)
@@ -235,14 +235,19 @@ int getPicTask()
 		memcpy(pCore1InBuf, g_pReceiveBuffer, (inBufSize / 2));
 		// todo wait core1 writeOver. in the isrHandle while judge
 		//interrupt2CoreN();
+		//Cache_wbInv();
+		//char *p=(char *)malloc(sizeof(int)*4);
 		write_uart("triggle INT to core1\n\r");
-		DEVICE_REG32_W((IPC_INT_ADDR(1)), 0x00000001);
-		//DEVICE_REG32_W(IPC_INT_ADDR(1), 1);
-		unsigned int flag = 4;
-		triggleIPCinterrupt(1, flag);
+
+
+
+		//unsigned int flag = 4;
+		//triggleIPCinterrupt(1, flag);
+		DEVICE_REG32_W(KICK0, 0x83e70b13);
+		DEVICE_REG32_W(KICK1, 0x95a4f1e0);
+		DEVICE_REG32_W((IPC_INT_ADDR(1)), 0x01);
 
 		Semaphore_pend(g_readSemaphore,BIOS_WAIT_FOREVER);
-		write_uart("core1 wait finished\n\r");
 	}
 #if 0
 	/********************************************DSP write and pc read*/
@@ -833,7 +838,7 @@ int distributePicTask()
 {
 	int retVal = 0;
 	//write_uart("distributePicTask wait g_writeSemaphore\n\r");
-	Semaphore_pend(g_writeSemaphore, BIOS_WAIT_FOREVER);
+	//Semaphore_pend(g_writeSemaphore, BIOS_WAIT_FOREVER);
 	return (retVal);
 }
 
