@@ -233,6 +233,7 @@ int getPicTask()
 
 		// distributePicToCoreN();
 		memcpy(pCore1InBuf, g_pReceiveBuffer, (inBufSize / 2));
+		memcpy(pCore2InBuf, g_pReceiveBuffer, (inBufSize / 2));
 		// todo wait core1 writeOver. in the isrHandle while judge
 		//interrupt2CoreN();
 		//Cache_wbInv();
@@ -246,6 +247,7 @@ int getPicTask()
 		DEVICE_REG32_W(KICK0, 0x83e70b13);
 		DEVICE_REG32_W(KICK1, 0x95a4f1e0);
 		DEVICE_REG32_W((IPC_INT_ADDR(1)), 0x01);
+		DEVICE_REG32_W((IPC_INT_ADDR(2)), 0x01);
 
 		Semaphore_pend(g_readSemaphore,BIOS_WAIT_FOREVER);
 	}
